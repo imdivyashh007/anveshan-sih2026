@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
-import { MapPin, ThumbsUp, Tag, Search, Filter, Loader2 } from "lucide-react";
+import { MapPin, ThumbsUp, Tag, Search, Filter, Loader2, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 type Challenge = Database["public"]["Tables"]["challenges"]["Row"];
 
@@ -138,7 +139,13 @@ export default function ChallengesFeedPage() {
                     <Tag className="w-3 h-3" />
                     {challenge.category}
                   </span>
-                  <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${
+                    challenge.status === "Adopted" 
+                      ? "bg-emerald-100 text-emerald-800 font-semibold"
+                      : challenge.status === "Under Review"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-slate-100 text-slate-600"
+                  }`}>
                     {challenge.status}
                   </span>
                 </div>
@@ -155,20 +162,30 @@ export default function ChallengesFeedPage() {
               <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1 text-slate-500">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                  <span className="truncate max-w-[150px]">
-                    {challenge.block_or_village ? `${challenge.block_or_village}, ` : ""}
+                  <span className="truncate max-w-[110px]">
                     {challenge.district}
                   </span>
                 </div>
 
-                <button
-                  onClick={() => handleUpvote(challenge.id, challenge.upvotes)}
-                  disabled={upvotingId === challenge.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 hover:text-emerald-700 transition cursor-pointer"
-                >
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  <span className="font-semibold">{challenge.upvotes}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleUpvote(challenge.id, challenge.upvotes)}
+                    disabled={upvotingId === challenge.id}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-emerald-50 hover:border-emerald-200 text-slate-700 hover:text-emerald-700 transition cursor-pointer"
+                    title="Upvote"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <span className="font-semibold">{challenge.upvotes}</span>
+                  </button>
+
+                  <Link
+                    href={`/challenges/${challenge.id}/adopt`}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition cursor-pointer"
+                  >
+                    <span>Adopt</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
