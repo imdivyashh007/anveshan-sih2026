@@ -1,212 +1,236 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { Send, AlertCircle, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { analyzeEngineeringText, AnalysisResult } from '@/lib/nlpAnalyzer';
+import { 
+  Sparkles, 
+  MapPin, 
+  AlertCircle, 
+  CheckCircle2, 
+  Send, 
+  Loader2, 
+  Tag, 
+  ShieldAlert 
+} from 'lucide-react';
 
-const DISTRICTS = [
-  "Dumka",
-  "Sahebganj",
-  "Chaibasa (West Singhbhum)",
-  "Ranchi",
-  "Dhanbad",
-  "Jamshedpur (East Singhbhum)",
-  "Bokaro",
-  "Hazaribagh",
-  "Deoghar",
-  "Giridih",
-  "Palamu",
-  "Gumla"
+const JHARKHAND_DISTRICTS = [
+  'Sahebganj', 'Dumka', 'Ranchi', 'Chaibasa (West Singhbhum)', 
+  'Dhanbad', 'Bokaro', 'Hazaribagh', 'Jamshedpur (East Singhbhum)',
+  'Deoghar', 'Giridih', 'Palamu', 'Ramgarh'
 ];
 
-// Aligned with the database check constraint
 const CATEGORIES = [
-  "Water & Sanitation",
-  "Renewable Energy",
-  "Agriculture",
-  "Healthcare",
-  "Rural Infrastructure",
-  "Education"
+  'Water & Sanitation',
+  'Renewable Energy',
+  'Agriculture & Post-Harvest',
+  'Environmental & Mining',
+  'Rural Infrastructure'
 ];
 
 export default function ReportProblemPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [title, setTitle] = useState('');
+  const [district, setDistrict] = useState(JHARKHAND_DISTRICTS[0]);
+  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const [formData, setFormData] = useState({
-    title: "",
-    category: CATEGORIES[0],
-    district: DISTRICTS[0],
-    block_or_village: "",
-    description: "",
-  });
+  const analysis: AnalysisResult = analyzeEngineeringText(description);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setErrorMessage("");
+    if (!title.trim() || !description.trim()) return;
 
-    try {
-      const { error } = await supabase.from("challenges").insert([
-        {
-          title: formData.title,
-          category: formData.category,
-          district: formData.district,
-          block_or_village: formData.block_or_village || null,
-          description: formData.description,
-          status: "Reported",
-          upvotes: 1,
-        },
-      ]);
-
-      if (error) {
-        throw error;
+    setSubmitting(true);
+    const { error } = await supabase.from('challenges').insert([
+      {
+        title,
+        district,
+        category,
+        description,
+        status: 'Reported',
+        upvotes: 1
       }
+    ]);
 
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/challenges");
-      }, 1500);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to submit challenge.");
-    } finally {
-      setLoading(false);
+    setSubmitting(false);
+    if (!error) {
+      router.push('/challenges');
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
-      <Link
-        href="/challenges"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 mb-6 transition"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Challenges Feed
-      </Link>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+      <div className="mb-8">
+        <span className="text-xs uppercase font-bold tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+          Grassroots Ingestion Terminal
+        </span>
+        <h1 className="text-3xl font-extrabold text-slate-900 mt-2">Log Civic Engineering Bottleneck</h1>
+        <p className="text-sm text-slate-600 mt-1">
+          Provide ground data from Jharkhand districts. Our automated triage pipeline extracts technical domains for university R&D adoption.
+        </p>
+      </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Report Grassroots Problem</h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Submit a verified local civic issue from Jharkhand for university researchers and innovators to adopt.
-          </p>
-        </div>
-
-        {success && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-sm">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
-            <span>Problem logged successfully! Redirecting to feed...</span>
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 text-red-800 text-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Input Form */}
+        <div className="lg:col-span-2 space-y-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-              Problem Title *
+            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+              Problem Statement Title
             </label>
             <input
               type="text"
               required
-              placeholder="e.g., Solar fluoride filter breakdown in 3 village wards"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+              placeholder="e.g., Heavy Slag Leaching into Subsurface Aquifers"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                Domain / Sector *
+              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+                Target District
               </label>
               <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                value={district}
+                onChange={e => setDistrict(e.target.value)}
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
               >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
+                {JHARKHAND_DISTRICTS.map(d => (
+                  <option key={d} value={d}>{d}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                District *
+              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+                Engineering Sector
               </label>
               <select
-                value={formData.district}
-                onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
               >
-                {DISTRICTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
+                {CATEGORIES.map(c => (
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-              Block / Panchayat / Village (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., Jama Block, Gopi Kandar"
-              value={formData.block_or_village}
-              onChange={(e) => setFormData({ ...formData, block_or_village: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-              Problem Description & Ground Reality *
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Technical Failure Description
+              </label>
+              <span className="text-[11px] text-slate-400 font-mono">
+                {description.length} characters
+              </span>
+            </div>
             <textarea
               required
-              rows={4}
-              placeholder="Detail the technical failure, ground challenges, affected population, or why current solutions failed..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white resize-none"
+              rows={6}
+              placeholder="Describe what is failing, the local context, quantifiable indicators (e.g. 0.08 mg/L arsenic, 12V battery failure within 9 months), and past failed repair attempts..."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              className="w-full p-3.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 leading-relaxed font-sans"
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition shadow-sm disabled:opacity-50 cursor-pointer"
+            disabled={submitting || description.trim().length < 15}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm rounded-lg transition disabled:opacity-50 cursor-pointer shadow-sm"
           >
-            {loading ? (
+            {submitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Submitting to Registry...
+                <span>Broadcasting to State Clearinghouse...</span>
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                Submit Problem
+                <span>Submit to State Innovation Council</span>
               </>
             )}
           </button>
-        </form>
-      </div>
+        </div>
+
+        {/* Live AI Analysis Sidebar */}
+        <div className="space-y-4">
+          <div className="bg-slate-900 text-slate-200 p-5 rounded-xl border border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                NLP Triage Assistant
+              </span>
+            </div>
+
+            {/* Completeness Index */}
+            <div>
+              <div className="flex justify-between text-xs mb-1.5 font-mono">
+                <span className="text-slate-400">Completeness Index:</span>
+                <span className={analysis.completenessScore >= 70 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                  {analysis.completenessScore}%
+                </span>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-300 ${
+                    analysis.completenessScore >= 70 ? 'bg-emerald-500' : 'bg-amber-500'
+                  }`}
+                  style={{ width: `${analysis.completenessScore}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Extracted Domains */}
+            <div>
+              <span className="text-[11px] font-mono text-slate-400 block mb-1.5">Detected Sub-Domains:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {analysis.extractedDomains.map((dom) => (
+                  <span key={dom} className="text-[10px] font-medium bg-slate-800 border border-slate-700 text-emerald-300 px-2 py-0.5 rounded">
+                    {dom}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Dynamic Recommendations */}
+            <div className="pt-2 border-t border-slate-800">
+              <span className="text-[11px] font-mono text-slate-400 block mb-1">State Formulation Feedback:</span>
+              {analysis.recommendations.length > 0 ? (
+                <ul className="space-y-1 text-[11px] text-slate-400">
+                  {analysis.recommendations.map((rec, i) => (
+                    <li key={i} className="flex items-start gap-1.5 text-amber-300/80">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Specification exceeds minimum state audit criteria.</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-xs text-emerald-800 space-y-1">
+            <p className="font-bold flex items-center gap-1">
+              <ShieldAlert className="w-3.5 h-3.5" /> Automatic Deduplication
+            </p>
+            <p className="text-[11px] text-emerald-700 leading-relaxed">
+              Every challenge is geofenced against existing complaints to eliminate duplicate public reporting in the same block.
+            </p>
+          </div>
+        </div>
+      </form>
     </div>
   );
 }

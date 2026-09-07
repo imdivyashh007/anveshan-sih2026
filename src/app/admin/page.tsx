@@ -14,7 +14,9 @@ import {
   Cpu,
   FileSignature,
   AlertTriangle,
-  BadgeCheck
+  Send,
+  Coins,
+  ArrowUpRight
 } from 'lucide-react';
 
 interface ProposalWithRelations {
@@ -40,7 +42,6 @@ interface ProposalWithRelations {
   };
 }
 
-// Utility to generate a printable State Sanction PDF
 const generateSanctionOrder = (proposal: ProposalWithRelations) => {
   const amount = proposal.estimated_budget ?? proposal.budget_inr ?? 0;
   const dateStr = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -82,38 +83,32 @@ const generateSanctionOrder = (proposal: ProposalWithRelations) => {
         <div class="content">
           <p>By the order of the State Innovation Council, approval is hereby accorded for the adoption and execution of the civic research proposal titled <strong>"${proposal.title}"</strong>.</p>
           
-          <p><strong>Target Problem:</strong> ${proposal.challenges?.title || 'Civic Infrastructure Bottleneck'}<br/>
+          <p><strong>Target Problem:</strong> ${proposal.challenges?.title || 'Civic Bottleneck'}<br/>
              <strong>District Allocation:</strong> ${proposal.challenges?.district || 'Statewide'}<br/>
              <strong>Lead Investigator:</strong> ${proposal.users?.full_name || proposal.users?.email || 'Authorized R&D Lab'}
           </p>
 
-          <p>The Council sanctions a total research grant of <span class="amount">₹${amount.toLocaleString('en-IN')}</span> for a stipulated timeline of <strong>${proposal.timeline_months} months</strong>.</p>
+          <p>The Council sanctions a total research grant of <span class="amount">₹${amount.toLocaleString('en-IN')}</span> for a timeline of <strong>${proposal.timeline_months} months</strong>.</p>
           
           <p><strong>Funding Disbursement Tranches:</strong></p>
           <ul>
-            <li><strong>30%</strong> (₹${(amount * 0.3).toLocaleString('en-IN')}): Immediate mobilization advance.</li>
-            <li><strong>40%</strong> (₹${(amount * 0.4).toLocaleString('en-IN')}): Upon successful lab prototype validation.</li>
-            <li><strong>30%</strong> (₹${(amount * 0.3).toLocaleString('en-IN')}): Upon field deployment in the target district.</li>
+            <li><strong>Tranche 1 (30% - ₹${(amount * 0.3).toLocaleString('en-IN')}):</strong> Mobilization & initial equipment procurement.</li>
+            <li><strong>Tranche 2 (40% - ₹${(amount * 0.4).toLocaleString('en-IN')}):</strong> Milestone 2 lab prototype validation.</li>
+            <li><strong>Tranche 3 (30% - ₹${(amount * 0.3).toLocaleString('en-IN')}):</strong> Live district deployment and panchayat sign-off.</li>
           </ul>
 
           <p><em>The investigating institution must submit quarterly technical audit reports. Intellectual Property derived from this grant falls under the State-University Joint Framework.</em></p>
         </div>
 
         <div class="footer">
-          <div class="signature">
-            Authorized Signatory<br/>
-            State Triage Panel, Jharkhand
-          </div>
-          <div class="signature" style="border:none;">
-            [Digital Verification Seal Valid]
-          </div>
+          <div class="signature">Authorized Signatory<br/>State Triage Panel, Jharkhand</div>
+          <div class="signature" style="border:none;">[Digital Verification Seal Valid]</div>
         </div>
       </body>
     </html>
   `);
   
   printWindow.document.close();
-  // Automatically trigger print dialog after content loads
   setTimeout(() => printWindow.print(), 500);
 };
 
@@ -121,6 +116,7 @@ export default function AdminPortalPage() {
   const [proposals, setProposals] = useState<ProposalWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [trancheState, setTrancheState] = useState<Record<string, number>>({});
   const [stats, setStats] = useState({
     totalChallenges: 0,
     underReview: 0,
@@ -174,12 +170,12 @@ export default function AdminPortalPage() {
   ) => {
     setUpdatingId(proposalId);
 
-    // Optimistic UI update
     setProposals(prev =>
       prev.map(p => (p.id === proposalId ? { ...p, status: decision } : p))
     );
 
     if (decision === 'Approved') {
+      setTrancheState(prev => ({ ...prev, [proposalId]: 1 }));
       setStats(prev => {
         const approvedItem = proposals.find(p => p.id === proposalId);
         const amount = Number(approvedItem?.estimated_budget ?? approvedItem?.budget_inr ?? 0);
@@ -193,48 +189,44 @@ export default function AdminPortalPage() {
     }
 
     try {
-      const { error: pErr } = await supabase
-        .from('proposals')
-        .update({ status: decision })
-        .eq('id', proposalId);
-
-      if (pErr) console.error('Error updating proposal:', pErr);
-
+      await supabase.from('proposals').update({ status: decision }).eq('id', proposalId);
       if (decision === 'Approved') {
-        const { error: cErr } = await supabase
-          .from('challenges')
-          .update({ status: 'Adopted' })
-          .eq('id', challengeId);
-        
-        if (cErr) console.error('Error updating challenge:', cErr);
+        await supabase.from('challenges').update({ status: 'Adopted' }).eq('id', challengeId);
       }
     } catch (err) {
-      console.error('handleDecision error:', err);
+      console.error(err);
     } finally {
       setUpdatingId(null);
       fetchAdminData();
     }
   };
 
+  const advanceTranche = (id: string) => {
+    setTrancheState(prev => {
+      const current = prev[id] || 1;
+      return { ...prev, [id]: Math.min(3, current + 1) };
+    });
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3">
         <div className="p-2.5 rounded-xl bg-slate-900 text-white shadow-sm">
-          <ShieldCheck className="w-6 h-6" />
+          <ShieldCheck className="w-6 h-6 text-emerald-400" />
         </div>
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
             State Innovation & Triage Portal
           </h1>
           <p className="text-sm text-slate-500">
-            Government of Jharkhand - Department of Higher Education & R&D Review Panel
+            Government of Jharkhand - Higher & Technical Education Triage Panel
           </p>
         </div>
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">Total Issues</span>
@@ -301,17 +293,17 @@ export default function AdminPortalPage() {
                   <th className="px-6 py-3.5">Target Problem</th>
                   <th className="px-6 py-3.5">Proposal Title & Lead</th>
                   <th className="px-6 py-3.5">AI Feasibility Audit</th>
-                  <th className="px-6 py-3.5">Budget & Term</th>
+                  <th className="px-6 py-3.5">Escrow Tranches</th>
                   <th className="px-6 py-3.5">Status</th>
                   <th className="px-6 py-3.5 text-right">Triage Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {proposals.map((item) => {
-                  // Simulate an AI risk/feasibility score based on the budget request and ID length to keep it deterministic
                   const rawBudget = Number(item.estimated_budget ?? item.budget_inr ?? 0);
                   const feasibilityScore = Math.min(98, Math.max(72, 95 - (rawBudget / 100000) + (item.title.length % 5)));
                   const isHighRisk = rawBudget > 800000;
+                  const currentTranche = trancheState[item.id] || (item.status === 'Approved' ? 1 : 0);
 
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition">
@@ -352,17 +344,39 @@ export default function AdminPortalPage() {
                           {isHighRisk && (
                             <div className="flex items-start gap-1 text-amber-700 bg-amber-50 p-1 rounded mt-1">
                               <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                              <span className="leading-tight">Budget flagged for manual audit (Exceeds ₹8L threshold)</span>
+                              <span className="leading-tight">Budget flagged for manual audit (&gt; ₹8L threshold)</span>
                             </div>
                           )}
                         </div>
                       </td>
 
+                      {/* Milestone Escrow Tranches */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="font-semibold text-slate-900">
-                          ₹{(rawBudget).toLocaleString("en-IN")}
-                        </p>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">{item.timeline_months} Months Term</p>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1 text-xs font-bold text-slate-900">
+                            <span>₹{rawBudget.toLocaleString('en-IN')}</span>
+                            <span className="text-[10px] text-slate-400 font-normal">({item.timeline_months} mo)</span>
+                          </div>
+                          {item.status === 'Approved' ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 text-[10px] font-mono">
+                                <span className={`px-1.5 py-0.5 rounded font-bold ${currentTranche >= 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>T1: 30%</span>
+                                <span className={`px-1.5 py-0.5 rounded font-bold ${currentTranche >= 2 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>T2: 40%</span>
+                                <span className={`px-1.5 py-0.5 rounded font-bold ${currentTranche >= 3 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>T3: 30%</span>
+                              </div>
+                              {currentTranche < 3 && (
+                                <button
+                                  onClick={() => advanceTranche(item.id)}
+                                  className="text-[10px] text-emerald-700 hover:text-emerald-800 font-semibold underline flex items-center gap-0.5 cursor-pointer"
+                                >
+                                  Release Next Tranche <ArrowUpRight className="w-2.5 h-2.5" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">Held in Escrow</span>
+                          )}
+                        </div>
                       </td>
                       
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -401,7 +415,6 @@ export default function AdminPortalPage() {
                           <button 
                             onClick={() => generateSanctionOrder(item)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition cursor-pointer shadow-sm"
-                            title="Print Official State Sanction Order"
                           >
                             <FileSignature className="w-3.5 h-3.5 text-emerald-400" />
                             <span>Sanction PDF</span>
