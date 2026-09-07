@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
-import { ArrowLeft, Send, CheckCircle2, AlertCircle, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle2, AlertCircle, Loader2, Sparkles,Building2 } from "lucide-react";
 import Link from "next/link";
 
 type Challenge = Database["public"]["Tables"]["challenges"]["Row"];
@@ -197,7 +197,21 @@ export default function AdoptChallengePage() {
               </select>
             </div>
           </div>
-
+          {/* AISHE Institutional Lab Verification Badge */}
+          <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-white border border-slate-200 shadow-xs">
+                <Building2 className="w-4 h-4 text-slate-700" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-900">Affiliated Research Institution</p>
+                <p className="text-[11px] text-slate-500">Birla Institute of Technology (BIT) Mesra — AISHE Code: U-0268</p>
+              </div>
+            </div>
+            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider">
+              AISHE Verified Lab
+            </span>
+          </div>
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
               Solution Abstract & Technical Methodology *

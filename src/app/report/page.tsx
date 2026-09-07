@@ -12,7 +12,8 @@ import {
   Send, 
   Loader2, 
   Tag, 
-  ShieldAlert 
+  ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 
 const JHARKHAND_DISTRICTS = [
@@ -64,6 +65,15 @@ export default function ReportProblemPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
       <div className="mb-8">
+        <div className="mb-4 flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs px-3.5 py-2 rounded-lg shadow-xs">
+  <ShieldCheck className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+    <span className="font-bold">Verified Citizen Ingestion:</span>
+    <span className="text-emerald-800 text-[11px]">
+      Authenticated via MeriPehchan / e-Pramaan Sandbox Gateway
+    </span>
+  </div>
+</div>
         <span className="text-xs uppercase font-bold tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
           Grassroots Ingestion Terminal
         </span>

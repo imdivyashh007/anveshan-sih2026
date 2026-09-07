@@ -224,7 +224,18 @@ export default function AdminPortalPage() {
           </p>
         </div>
       </div>
-
+      {/* State Authorization Seal */}
+      <div className="bg-slate-900 text-slate-200 border border-slate-800 px-4 py-2.5 rounded-xl flex items-center justify-between text-xs shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-medium">
+            Authenticated Session: <strong className="text-white font-semibold">State Innovation & Triage Council</strong> (Govt. of Jharkhand)
+          </span>
+        </div>
+        <span className="bg-slate-800 text-emerald-400 font-mono text-[10px] px-2.5 py-0.5 rounded border border-slate-700 font-semibold tracking-wide">
+          Clearance: Tier-1 Adjudicator
+        </span>
+      </div>
       {/* KPI Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
