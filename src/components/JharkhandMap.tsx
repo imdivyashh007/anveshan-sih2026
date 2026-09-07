@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -58,10 +58,27 @@ const DISTRICT_COORDINATES = [
 ];
 
 export default function JharkhandMap({ onSelectDistrict }: MapProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => {
+      setIsMounted(false);
+    };
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="w-full h-[460px] bg-slate-100 rounded-lg border border-slate-300 flex items-center justify-center text-slate-500 text-xs">
+        Initializing Geospatial Canvas...
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-[460px] rounded-lg overflow-hidden border border-slate-300 shadow-sm relative z-0">
       <MapContainer
-        key="jharkhand-gis-canvas"
+        key="gis-national-canvas-v1"
         center={[22.5937, 82.9629]}
         zoom={5}
         scrollWheelZoom={true}
